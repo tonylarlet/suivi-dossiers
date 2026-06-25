@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi dossiers admin</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f4;
+    --bg3: #eeede9;
+    --text: #1a1a18;
+    --text2: #6b6b67;
+    --text3: #9e9e9a;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --green: #1D9E75;
+    --green-bg: #E1F5EE;
+    --green-text: #085041;
+    --info-bg: #E6F1FB;
+    --info-text: #0C447C;
+    --danger: #E24B4A;
+    --danger-bg: #FCEBEB;
+    --danger-text: #791F1F;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg2: #252523;
+      --bg3: #2e2e2c;
+      --text: #f0ede8;
+      --text2: #a0a09c;
+      --text3: #6b6b67;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+      --green-bg: #04342C;
+      --green-text: #9FE1CB;
+      --info-bg: #042C53;
+      --info-text: #B5D4F4;
+      --danger-bg: #501313;
+      --danger-text: #F7C1C1;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+  .layout { display: flex; height: 100vh; overflow: hidden; }
+  .sidebar { width: 260px; flex-shrink: 0; background: var(--bg); border-right: 0.5px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .sidebar-header { padding: 16px; border-bottom: 0.5px solid var(--border); }
+  .sidebar-title { font-size: 15px; font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .sidebar-title i { font-size: 18px; }
+  .search { width: 100%; padding: 6px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius); font-size: 13px; background: var(--bg2); color: var(--text); }
+  .search:focus { outline: none; border-color: var(--green); }
+  .sidebar-body { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .group-label { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 16px 4px; }
+  .company-item { display: flex; align-items: center; padding: 7px 16px; cursor: pointer; gap: 8px; border-left: 2px solid transparent; }
+  .company-item:hover { background: var(--bg2); }
+  .company-item.active { background: var(--bg2); border-left-color: var(--green); }
+  .company-name { flex: 1; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .company-prog { font-size: 11px; color: var(--text3); flex-shrink: 0; }
+  .company-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; opacity: 0; }
+  .company-item.done .company-dot { opacity: 1; }
+  .sidebar-footer { padding: 12px 16px; border-top: 0.5px solid var(--border); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: transparent; color: var(--text); font-size: 13px; cursor: pointer; }
+  .btn:hover { background: var(--bg2); }
+  .btn-primary { background: var(--info-bg); color: var(--info-text); border-color: transparent; width: 100%; justify-content: center; }
+  .btn-primary:hover { opacity: 0.85; background: var(--info-bg); }
+  .btn-danger { color: var(--danger); border-color: var(--danger); padding: 5px 10px; font-size: 12px; }
+  .btn-danger:hover { background: var(--danger-bg); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .main { flex: 1; overflow-y: auto; background: var(--bg3); }
+  .main-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text3); flex-direction: column; gap: 12px; }
+  .main-empty i { font-size: 40px; }
+  .main-header { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
+  .main-title { font-size: 16px; font-weight: 500; color: var(--text); flex: 1; }
+  .clot-badge { font-size: 11px; padding: 3px 8px; border-radius: 100px; background: var(--bg2); color: var(--text2); border: 0.5px solid var(--border); }
+  .progress-bar { height: 3px; background: var(--border); }
+  .progress-fill { height: 3px; background: var(--green); transition: width 0.4s; }
+  .steps { padding: 16px 24px; display: flex; flex-direction: column; gap: 6px; }
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .step-header { display: flex; align-items: center; gap: 10px; padding: 11px 14px; cursor: pointer; }
+  .step-header:hover { background: var(--bg2); }
+  .check { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: background 0.15s; }
+  .check:hover { border-color: var(--green); }
+  .check.done { background: var(--green); border-color: var(--green); color: white; }
+  .check i { font-size: 12px; }
+  .step-label { flex: 1; font-size: 13px; color: var(--text); }
+  .step-label.done { color: var(--text3); text-decoration: line-through; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 100px; }
+  .badge-money { background: var(--green-bg); color: var(--green-text); }
+  .badge-date { color: var(--text3); }
+  .badge-note { color: var(--text2); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .step-detail { padding: 0 14px 14px 44px; border-top: 0.5px solid var(--border); background: var(--bg2); display: none; }
+  .step-detail.open { display: block; }
+  .field-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .field-group { flex: 1; min-width: 120px; }
+  .field-group label { font-size: 11px; color: var(--text2); display: block; margin-bottom: 4px; }
+  .field-group input, .field-group textarea { width: 100%; padding: 6px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius); font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; }
+  .field-group input:focus, .field-group textarea:focus { outline: none; border-color: var(--green); }
+  .field-group textarea { resize: vertical; min-height: 60px; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; display: none; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--bg); border-radius: var(--radius-lg); padding: 24px; width: 360px; border: 0.5px solid var(--border); }
+  .modal h2 { font-size: 15px; font-weight: 500; margin-bottom: 16px; }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  @media (max-width: 640px) {
+    .layout { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 0.5px solid var(--border); }
+    .sidebar-body { max-height: 200px; }
+    .steps { padding: 12px; }
+    .main-header { padding: 12px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title"><i class="ti ti-folder"></i> Suivi dossiers admin</div>
+      <input type="text" class="search" id="searchInput" placeholder="Rechercher…" oninput="renderSidebar()">
+    </div>
+    <div class="sidebar-body" id="sidebarBody"></div>
+    <div class="sidebar-footer">
+      <button class="btn btn-primary" onclick="openModal()"><i class="ti ti-plus"></i> Ajouter une société</button>
+    </div>
+  </div>
+
+  <div class="main" id="main">
+    <div class="main-empty" id="mainEmpty">
+      <i class="ti ti-folder-open"></i>
+      <span>Sélectionnez une société</span>
+    </div>
+    <div id="mainContent" style="display:none"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2><i class="ti ti-building"></i> Nouvelle société</h2>
+    <div class="field-group" style="margin-bottom:12px">
+      <label>Nom de la société</label>
+      <input type="text" id="modalName" placeholder="Ex : SCI Dupont" onkeydown="if(event.key==='Enter')saveModal()">
+    </div>
+    <div class="field-group">
+      <label>Date de clôture</label>
+      <input type="text" id="modalClot" placeholder="Ex : 31/12">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" style="width:auto" onclick="saveModal()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STEPS = [
+  { id: 'dossier_complet', label: 'Envoi du dossier complet', hasMoney: false },
+  { id: 'reception_projets', label: 'Réception des projets', hasMoney: false },
+  { id: 'validation_projets', label: 'Validation des projets', hasMoney: false },
+  { id: 'reception_liasse', label: 'Réception liasse fiscale', hasMoney: false },
+  { id: 'renvoi_liasse', label: 'Renvoi liasse fiscale signée', hasMoney: false },
+  { id: 'saisie_od', label: 'Saisie des OD', hasMoney: false },
+  { id: 'ran', label: 'RAN', hasMoney: false },
+  { id: 'reception_bilans', label: 'Réception bilans définitifs', hasMoney: false },
+  { id: 'envoi_ag', label: 'Envoi des infos AG', hasMoney: false },
+  { id: 'honoraires_1', label: 'Honoraires', hasMoney: true },
+  { id: 'reception_ag', label: 'Réception AG', hasMoney: false },
+  { id: 'validation_ag', label: 'Validation des AG (envoi courrier ?)', hasMoney: false },
+  { id: 'honoraires_2', label: 'Honoraires', hasMoney: true },
+  { id: 'saisie_dividendes', label: 'Saisie des dividendes compta', hasMoney: false },
+  { id: 'reception_ag_enregistrees', label: 'Réception AG enregistrées', hasMoney: false },
+];
+
+const INITIAL = [
+  { name: 'PR DIFFUSION', clot: '31/12' }, { name: 'BRM DIFFUSION', clot: '31/12' },
+  { name: 'SOFADIF', clot: '31/12' }, { name: 'TL', clot: '31/12' },
+  { name: 'MOTEX', clot: '31/12' }, { name: 'SOMODIF', clot: '31/12' },
+  { name: 'TAHITIJOB', clot: '31/12' }, { name: 'SCI VATEA', clot: '31/12' },
+  { name: 'SCI TEMOANA', clot: '31/12' }, { name: 'SC PUNAHERE', clot: '31/12' },
+  { name: 'SCI PAETOU 13', clot: '31/12' }, { name: 'SCI PAO 7', clot: '31/12' },
+  { name: 'SCI MARCILLAC 1', clot: '31/12' }, { name: 'SCI AROA HITI', clot: '31/12' },
+  { name: 'SC LES LONNES', clot: '31/12' }, { name: 'SAS EKEKO', clot: '31/12' },
+  { name: 'SEFRACA', clot: '31/03' }, { name: 'SOCADIM', clot: '31/03' },
+  { name: 'DUTEX', clot: '31/03' }, { name: 'SEFRAKO', clot: '31/03' },
+  { name: 'SOMARI', clot: '31/03' }, { name: 'SEFRATEX', clot: '31/03' },
+  { name: 'SERLOG', clot: '31/03' }, { name: 'SMRC', clot: '30/06' },
+  { name: 'TRITEX', clot: '30/06' }, { name: 'TPC', clot: '30/06' },
+  { name: 'LOGISER', clot: '30/06' }, { name: 'SCI VIRANI', clot: '30/06' },
+  { name: 'SCI MIRMAN', clot: '30/06' }, { name: 'SCI SDE', clot: '30/09' },
+  { name: 'SERCOPAC', clot: '30/09' }, { name: 'SERCOPAC TAHITI', clot: '30/09' },
+  { name: 'SEMAPA', clot: '30/09' }, { name: 'CALEDOJOB', clot: '30/09' },
+  { name: 'BRICOPF1', clot: '30/09' }, { name: 'BRICOPF2', clot: '30/09' },
+  { name: 'SCI YAHOUE', clot: '30/09' }, { name: 'SCI AUSTERLITZ', clot: '30/09' },
+  { name: 'SCI AMPJOULE', clot: '30/09' }, { name: 'SCI CONCEPTION', clot: '30/09' },
+  { name: 'SCI GUYON 12', clot: '30/09' }, { name: 'SCI L IMPASSE', clot: '30/09' },
+  { name: 'SCI DU NORD', clot: '30/09' }, { name: 'SCI HEIVARUE', clot: '30/09' },
+];
+
+let data = JSON.parse(localStorage.getItem('suivi_admin_v2') || 'null');
+if (!data) {
+  data = { companies: INITIAL.map(c => c.name), clot: {}, steps: {} };
+  INITIAL.forEach(c => { data.clot[c.name] = c.clot; data.steps[c.name] = {}; });
+}
+let current = null;
+let openStep = null;
+
+function save() { localStorage.setItem('suivi_admin_v2', JSON.stringify(data)); }
+
+function getDone(name) {
+  return STEPS.filter(s => data.steps[name]?.[s.id]?.done).length;
+}
+
+function openModal() {
+  document.getElementById('modal').classList.add('open');
+  setTimeout(() => document.getElementById('modalName').focus(), 50);
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function saveModal() {
+  const name = document.getElementById('modalName').value.trim();
+  const clot = document.getElementById('modalClot').value.trim();
+  if (!name) return;
+  if (data.companies.includes(name)) { alert('Société déjà existante.'); return; }
+  data.companies.push(name);
+  data.clot[name] = clot;
+  data.steps[name] = {};
+  document.getElementById('modalName').value = '';
+  document.getElementById('modalClot').value = '';
+  closeModal();
+  save();
+  selectCompany(name);
+  renderSidebar();
+}
+
+function removeCompany(name) {
+  if (!confirm('Supprimer ' + name + ' ?')) return;
+  data.companies = data.companies.filter(c => c !== name);
+  delete data.steps[name]; delete data.clot[name];
+  if (current === name) { current = data.companies[0] || null; }
+  save(); renderSidebar(); renderMain();
+}
+
+function selectCompany(name) { current = name; openStep = null; renderMain(); renderSidebar(); }
+function toggleStep(id) { openStep = openStep === id ? null : id; renderMain(); }
+
+function toggleDone(name, stepId) {
+  const s = data.steps[name][stepId] || {};
+  s.done = !s.done;
+  if (s.done && !s.date) s.date = new Date().toISOString().slice(0, 10);
+  data.steps[name][stepId] = s;
+  save(); renderMain(); renderSidebar();
+}
+
+function updateField(name, stepId, field, value) {
+  if (!data.steps[name][stepId]) data.steps[name][stepId] = {};
+  data.steps[name][stepId][field] = value;
+  save();
+}
+
+function renderSidebar() {
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  const filtered = data.companies.filter(c => c.toLowerCase().includes(q));
+  const ORDER = ['31/12', '31/03', '30/06', '30/09'];
+  const groups = {};
+  filtered.forEach(c => {
+    const k = data.clot[c] || 'Autre';
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(c);
+  });
+  const allKeys = [...ORDER.filter(k => groups[k]), ...Object.keys(groups).filter(k => !ORDER.includes(k))];
+  let html = '';
+  allKeys.forEach(k => {
+    html += `<div class="group-label">Clôture ${k}</div>`;
+    groups[k].forEach(c => {
+      const done = getDone(c);
+      const allDone = done === STEPS.length;
+      html += `<div class="company-item${c === current ? ' active' : ''}${allDone ? ' done' : ''}" onclick="selectCompany('${esc(c)}')">
+        <div class="company-dot"></div>
+        <span class="company-name">${esc(c)}</span>
+        <span class="company-prog">${done}/${STEPS.length}</span>
+      </div>`;
+    });
+  });
+  if (!html) html = '<div style="padding:16px;color:var(--text3);font-size:13px;">Aucun résultat</div>';
+  document.getElementById('sidebarBody').innerHTML = html;
+}
+
+function renderMain() {
+  const empty = document.getElementById('mainEmpty');
+  const content = document.getElementById('mainContent');
+  if (!current) { empty.style.display = 'flex'; content.style.display = 'none'; return; }
+  empty.style.display = 'none'; content.style.display = 'block';
+  const steps = data.steps[current] || {};
+  const done = getDone(current);
+  const pct = Math.round(done / STEPS.length * 100);
+
+  let html = `<div class="main-header">
+    <span class="main-title">${esc(current)}</span>
+    ${data.clot[current] ? `<span class="clot-badge"><i class="ti ti-calendar"></i> ${esc(data.clot[current])}</span>` : ''}
+    <span style="font-size:12px;color:var(--text3)">${done}/${STEPS.length} — ${pct}%</span>
+    <button class="btn btn-danger" onclick="removeCompany('${esc(current)}')"><i class="ti ti-trash"></i></button>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+  <div class="steps">`;
+
+  STEPS.forEach(step => {
+    const s = steps[step.id] || {};
+    const isDone = !!s.done;
+    const isOpen = openStep === step.id;
+    html += `<div class="card">
+      <div class="step-header" onclick="toggleStep('${step.id}')">
+        <div class="check${isDone ? ' done' : ''}" onclick="event.stopPropagation();toggleDone('${esc(current)}','${step.id}')">
+          ${isDone ? '<i class="ti ti-check"></i>' : ''}
+        </div>
+        <span class="step-label${isDone ? ' done' : ''}">${step.label}</span>
+        ${step.hasMoney && s.amount ? `<span class="badge badge-money">${Number(s.amount).toLocaleString('fr-FR')} €</span>` : ''}
+        ${s.date && !isOpen ? `<span class="badge badge-date">${s.date}</span>` : ''}
+        ${s.note && !isOpen ? `<span class="badge badge-note" title="${esc(s.note)}">${esc(s.note)}</span>` : ''}
+        <i class="ti ti-chevron-${isOpen ? 'up' : 'down'}" style="font-size:13px;color:var(--text3)"></i>
+      </div>
+      <div class="step-detail${isOpen ? ' open' : ''}">
+        <div class="field-row">
+          <div class="field-group">
+            <label>Date</label>
+            <input type="date" value="${s.date || ''}" onchange="updateField('${esc(current)}','${step.id}','date',this.value);renderMain()">
+          </div>
+          ${step.hasMoney ? `<div class="field-group">
+            <label>Montant (€)</label>
+            <input type="number" min="0" step="0.01" placeholder="0,00" value="${s.amount || ''}" oninput="updateField('${esc(current)}','${step.id}','amount',this.value);renderMain()">
+          </div>` : ''}
+        </div>
+        <div class="field-row">
+          <div class="field-group" style="flex:100%">
+            <label>Notes</label>
+            <textarea placeholder="Remarques, suivi…" oninput="updateField('${esc(current)}','${step.id}','note',this.value)">${esc(s.note || '')}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html += '</div>';
+  content.innerHTML = html;
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+renderSidebar();
+renderMain();
+</script>
+</body>
+</html>
